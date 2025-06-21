@@ -4,8 +4,10 @@ This will create a VM which configures Ubuntu and installs AdGuardHome.
 It will add a public IP which you can use to point your local DNS to,
 this will filter your internet traffic to deny ad serving websites and known malicious websites.
 
-[![Dashboard Preview](https://cdn.adguard.com/public/Adguard/Blog/AGHome/dashboard.jpg)](https://cdn.adguard.com/public/Adguard/Blog/AGHome/dashboard.mp4)
-
+# Video
+<a href="https://cdn.adguard.com/public/Adguard/Blog/AGHome/dashboard.mp4" target="_blank">
+  <img src="https://cdn.adguard.com/public/Adguard/Blog/AGHome/dashboard.jpg" width="300"/>
+</a>
 
 ---
 
