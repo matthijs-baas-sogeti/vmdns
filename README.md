@@ -1,8 +1,7 @@
 # VM AdguardDNS
 
-This will create a VM in Azure using Terraform which configures Ubuntu and installs AdGuardHome.
-
-It will create a public IP which you can use as your DNS. ( See picture below )
+This will create a VM in Azure using Terraform which configures Ubuntu and installs AdGuardHome.<br>
+It will create a public IP which you can use as your DNS. ( See picture below )<br>
 This will filter your internet traffic to deny ad serving websites and known malicious websites
 using several blocklists including [OISD](https://oisd.nl/)
 
