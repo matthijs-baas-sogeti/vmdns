@@ -4,7 +4,7 @@ This will create a VM which configures Ubuntu and installs AdGuardHome.
 It will add a public IP which you can use to point your local DNS to,
 this will filter your internet traffic to deny ad serving websites and known malicious websites.
 
-<img src="https://b2024479.smushcdn.com/2024479/wp-content/uploads/2020/09/use-the-following-DNS-server-address.jpg?lossy=1&strip=1&webp=1" width="300"/>
+<img src="https://b2024479.smushcdn.com/2024479/wp-content/uploads/2020/09/use-the-following-DNS-server-address.jpg?lossy=1&strip=1&webp=1](https://www.magnify247.com/wp-content/uploads/sites/346/2020/02/mag4.png" width="300"/>
 
 ---
 
