@@ -1,0 +1,151 @@
+name: CI
+on:
+  push:
+    branches: [ "main" ]
+  release:
+    types: [published]
+  pull_request:
+    branches: [ "main" ]
+    
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+  
+jobs:
+  tflint:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+    - uses: actions/checkout@v4
+      name: Checkout source code
+
+    - uses: actions/cache@v4
+      name: Cache plugin dir
+      with:
+        path: ~/.tflint.d/plugins
+        key: ${{ matrix.os }}-tflint-${{ hashFiles('.tflint.hcl') }}
+
+    - uses: terraform-linters/setup-tflint@v4
+      name: Setup TFLint
+      with:
+        tflint_version: v0.52.0
+    - name: Show version
+      run: tflint --version
+
+    - name: Init TFLint
+      run: tflint --init
+      env:
+        # https://github.com/terraform-linters/tflint/blob/master/docs/user-guide/plugins.md#avoiding-rate-limiting
+        GITHUB_TOKEN: ${{ github.token }}
+
+    - name: Run TFLint
+      run: tflint -f compact
+      
+  terraform:
+    name: "Terraform"
+    runs-on: ubuntu-latest
+    env:
+      AZURE_ACCESS_KEY_ID: ${{ secrets.AZURE_ACCESS_KEY_ID }}
+      AZURE_SECRET_ACCESS_KEY: ${{ secrets.AZURE_SECRET_ACCESS_KEY }}
+    defaults:
+      run:
+        working-directory: / # relative path to directory with .tf
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+          #cli_config_credentials_hostname: 'terraform.example.com'
+          #cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Plan
+        id: plan
+        if: github.event_name == 'pull_request'
+        # dns zone must exist for this to succeed
+        # assuming this .tf code makes a dns zone
+        run: terraform plan
+        continue-on-error: true
+
+      - uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+        with:
+          github-tokens: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+            <details><summary>Validation Output</summary>
+      
+            \`\`\`\n
+            ${{ steps.validate.outputs.stdout }}
+            \`\`\`
+      
+            </details>
+      
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+      
+            <details><summary>Show Plan</summary>
+      
+            \`\`\`\n
+            ${process.env.PLAN}
+            \`\`\`
+      
+            </details>
+      
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Working Directory: \`${{ env.tf_actions_working_dir }}\`, Workflow: \`${{ github.workflow }}\`*`;
+      
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+      - name: Check tag
+        id: check-tag
+        run: |
+          if [[ ${{ github.ref }} =~ ^refs\/tags\/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo ::set-output name=environment::production
+          elif [[ ${{ github.ref }} == 'refs/heads/main' ]]; then echo ::set-output name=environment::staging
+          else echo ::set-output=environment::unknown
+          fi
+        
+      - name: Terraform Apply Global
+        # if we are in dns zone in main branch or release
+        if: github.event_name == 'push' || github.event_name == 'release'
+        working-directory: / # change this
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Terraform Apply Staging
+        # if check determines its staging, apply here, otherwise goto production
+        if: steps.check-tag.outputs.environment == 'staging' && github.event_name == 'push'
+        run: terraform apply
+
+      - name: Terraform Apply Production
+        if: steps.check-tag.outputs.environment == 'production' && github.event_name == 'release'
+        working-directory: relative/path/to/your/prod/tffiles # change this
+        run: |
+          terraform init
+          terraform apply
+        # maybe with -var db_pass=${{ secrets.DB_PASS }} -auto-approve
