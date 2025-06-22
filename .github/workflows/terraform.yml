@@ -52,7 +52,7 @@ jobs:
       AZURE_SECRET_ACCESS_KEY: ${{ secrets.AZURE_SECRET_ACCESS_KEY }}
     defaults:
       run:
-        working-directory: / # relative path to directory with .tf
+        working-directory: terraform # relative path to directory with .tf
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -132,7 +132,7 @@ jobs:
       - name: Terraform Apply Global
         # if we are in dns zone in main branch or release
         if: github.event_name == 'push' || github.event_name == 'release'
-        working-directory: / # change this
+        working-directory: terraform # change this
         run: |
           terraform init
           terraform apply -auto-approve
