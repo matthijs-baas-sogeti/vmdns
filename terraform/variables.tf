@@ -1,14 +1,14 @@
 variable "resource_group_name" {
-  type = string
+  type    = string
   default = "rgDNS"
 }
 
 variable "location" {
-  type = string
+  type    = string
   default = "Sweden Central"
 }
 
 variable "admin_username" {
-  type = string
+  type    = string
   default = "vmdns_admin"
 }
